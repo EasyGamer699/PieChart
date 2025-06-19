@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mein Dynamisches Tortendiagramm</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh; /* Mindesthöhe des Viewports */
+        background-color: #f0f0f0; /* Heller Hintergrund */
+      }
+      canvas {
+        max-width: 90vw; /* Maximale Breite relativ zum Viewport */
+        max-height: 90vh; /* Maximale Höhe relativ zum Viewport */
+        /* Versuche, Benutzerinteraktionen zu deaktivieren */
+        -webkit-user-select: none; /* Deaktiviert Textmarkierung auf WebKit-Browsern (iOS/Android WebView) */
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none; /* Verhindert Kontextmenü bei langem Drücken */
+        -webkit-tap-highlight-color: rgba(
+          0,
+          0,
+          0,
+          0
+        ); /* Entfernt den Tap-Highlight-Effekt */
+        touch-action: none; /* Verhindert Scrolling/Zooming/Pan auf Touch-Geräten */
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myPieChart"></canvas>
+
+    <script>
+      let myChart; // Referenz auf das Chart-Objekt, damit wir es aktualisieren können
+
+      /**
+       * Erstellt oder aktualisiert das Tortendiagramm mit neuen Daten.
+       * @param {Object} data - Ein Objekt mit 'labels' (Array von Strings), 'values' (Array von Zahlen) und 'colors' (Array von Strings/Hex-Codes).
+       */
+      function createOrUpdateChart(data) {
+        const ctx = document.getElementById("myPieChart").getContext("2d");
+
+        if (myChart) {
+          // Wenn das Diagramm bereits existiert, aktualisiere die Daten
+          myChart.data.labels = data.labels;
+          myChart.data.datasets[0].data = data.values;
+          myChart.data.datasets[0].backgroundColor = data.colors;
+          myChart.update(); // Diagramm neu rendern
+        } else {
+          // Neues Diagramm erstellen
+          myChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+              labels: data.labels,
+              datasets: [
+                {
+                  data: data.values,
+                  backgroundColor: data.colors,
+                  borderColor: "#fff", // Weiße Ränder zwischen den Segmenten
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false, // Passt die Größe an den Container an
+              plugins: {
+                legend: {
+                  position: "top", // Legende oben positionieren
+                },
+                tooltip: {
+                  enabled: true, // Tooltips beim Hover/Tippen aktivieren
+                },
+              },
+              // *** Hier versuchen wir, das "Drehen per Hand" und andere Interaktionen zu unterbinden ***
+              animation: false, // Deaktiviert alle Animationen beim Laden und Update
+              events: [], // Deaktiviert alle Events (Maus- und Touch-Events)
+              hover: {
+                mode: null, // Deaktiviert Hover-Effekte
+              },
+              // Für Chart.js v4+ (manche Optionen können je nach Version variieren)
+              interaction: {
+                mode: "none", // Deaktiviert alle Interaktionen
+                intersect: false, // Stellt sicher, dass keine Schnittpunkte erfasst werden
+              },
+            },
+          });
+        }
+      }
+
+      // Diese Funktion wird vom App Inventor über `WebViewer.EvaluateJavaScript` aufgerufen.
+      // Sie nimmt einen JSON-String entgegen, parst ihn und aktualisiert das Diagramm.
+      window.updateChartData = function (jsonStringData) {
+        if (jsonStringData) {
+          try {
+            const parsedData = JSON.parse(jsonStringData);
+            createOrUpdateChart(parsedData);
+            console.log("Diagramm mit neuen Daten aktualisiert:", parsedData);
+          } catch (e) {
+            console.error("Fehler beim Parsen der Daten von App Inventor:", e);
+          }
+        } else {
+          console.warn("Leere Daten von App Inventor erhalten.");
+        }
+      };
+
+      // Optionale Nachricht an App Inventor, wenn die Seite vollständig geladen ist
+      // Dies ist nützlich, um sicherzustellen, dass App Inventor erst Daten sendet,
+      // wenn die JavaScript-Funktion 'updateChartData' verfügbar ist.
+      window.onload = function () {
+        // Dies funktioniert nur, wenn App Inventor in der Lage ist,
+        // den WebViewString-Änderung vom JS-Kontext zu lesen.
+        // Wenn du EvaluateJavaScript für die Kommunikation von AI zu JS verwendest,
+        // ist dieser Teil optional, aber zum Debugging nützlich.
+        if (window.AppInventor && window.AppInventor.setWebViewString) {
+          window.AppInventor.setWebViewString("pageLoaded");
+        }
+        console.log("HTML-Seite und JavaScript geladen.");
+        // Initialer Aufruf mit leeren Daten, um das Canvas vorzubereiten
+        // oder um Standarddaten anzuzeigen, bevor App Inventor Daten sendet.
+        // createOrUpdateChart({ labels: [], values: [], colors: [] });
+      };
+    </script>
+  </body>
+</html>
+<!--
+  Diese HTML-Datei enthält ein dynamisches Tortendiagramm, das mit Chart.js erstellt wurde.
+  Es ist so konfiguriert, dass es Daten von App Inventor empfangen und anzeigen kann.
+  Die Interaktionen wie Drehen und Zoomen sind deaktiviert, um die Benutzererfahrung zu verbessern.
